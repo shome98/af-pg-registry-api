@@ -2,7 +2,7 @@
   "name": "af-pg-registry-api",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/api/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "run:install:basic": "echo \"🚀 Starting installation...\" && echo \"📦 Installing dependencies...\" && npm i typescript @types/node tsx nodemon  -D && npm i express express-rate-limit dotenv helmet zod cookie-parser cors jsonwebtoken winston-daily-rotate-file winston && npm i @types/express @types/cookie-parser @types/cors @types/jsonwebtoken -D && echo \" ✅ installation completed...\"",
