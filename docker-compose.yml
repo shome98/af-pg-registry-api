@@ -1,0 +1,41 @@
+services:
+
+  app:
+    build: . 
+    container_name: api-registry
+    ports:
+      - "9878:9878"      
+    volumes:
+      - .:/app                       # Map local code to container
+      - /app/node_modules            # Anonymous volume to protect container's node_modules
+    # env_file:
+    #   - fileName
+    depends_on:
+      - postgres-db_api-registry
+    networks:
+      - pg-net
+    
+  postgres-db_api-registry:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: api-registry_db
+    ports:
+      - "5489:5432"
+    volumes:
+      - ./api-registry_db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d api-registry_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pg-net
+
+networks:
+  pg-net:
+    external: true
+    name: shared-crud-api-network
+    # driver: bridge
