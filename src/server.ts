@@ -51,8 +51,17 @@ app.use(cookieParser());
 app.use(globalRateLimiter);
 
 //  Health Check
-app.get('/health', (_req, res) => {
-  sendSuccess(res, '💚 CRUD Factory Registry API is healthy!', {
+app.get('/healthz', (_req, res) => {
+  sendSuccess(res, '💚 Registry API is healthy!', {
+    status: 'ok',
+    environment: env.NODE_ENV,
+    timestamp: new Date().toISOString(),
+    uptime: `${Math.floor(process.uptime())}s`,
+  });
+});
+//  Ready Check
+app.get('/readyz', (_req, res) => {
+  sendSuccess(res, '🚀 Registry API is ready!', {
     status: 'ok',
     environment: env.NODE_ENV,
     timestamp: new Date().toISOString(),

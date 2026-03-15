@@ -4,16 +4,10 @@ import { env } from './config/env';
 import { db } from './db';
 import logger from './utils/logger';
 
-const BANNER = `
-╔══════════════════════════════════════════════════════╗
-║        CRUD Factory Registry API  🏭                 ║
-╚══════════════════════════════════════════════════════╝`;
-
 async function bootstrap(): Promise<void> {
-  console.log(BANNER);
-
+  logger.info('Registry API  🏭');
   //  Database connectivity check
-  logger.info('\n🔄 Connecting to database...');
+  logger.info('🔄 Connecting to database...');
   try {
     await db.execute(sql`SELECT 1`);
     logger.info(`✅ Database connected  (${env.DB_TYPE.toUpperCase()})`);
@@ -24,12 +18,13 @@ async function bootstrap(): Promise<void> {
 
   //  Start HTTP server
   const server = app.listen(env.PORT, () => {
-    logger.info(`\n🚀 Server running!`);
-    logger.info(`   📍 URL         : http://localhost:${env.PORT}`);
+    logger.info(`🚀 Server running!`);
+    logger.info(`   📍 URL         : ${env.API_BASE_URL}`);
     logger.info(`   🌿 Environment : ${env.NODE_ENV}`);
     logger.info(`   💾 Database    : ${env.DB_TYPE}`);
     logger.info(`   📋 Base route  : ${env.API_BASE_URL}/api/v1/mongo-apis`);
-    logger.info(`   💚 Health      : http://localhost:${env.PORT}/health\n`);
+    logger.info(`   💚 Health      : ${env.API_BASE_URL}/healthz`);
+    logger.info(`   🚀 Ready       : ${env.API_BASE_URL}/readyz`);
   });
 
   //  Graceful shutdown
