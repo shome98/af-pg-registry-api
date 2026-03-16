@@ -50,6 +50,14 @@ app.use(cookieParser());
 //  Global Rate Limiter
 app.use(globalRateLimiter);
 
+app.get('/', (req: Request, res: Response) => {
+  sendSuccess(res, '😊 Welcome start registering!', {
+    status: 'ok',
+    environment: env.NODE_ENV,
+    timestamp: new Date().toISOString(),
+    uptime: `${Math.floor(process.uptime())}s`,
+  });
+});
 //  Health Check
 app.get('/healthz', (_req, res) => {
   sendSuccess(res, '💚 Registry API is healthy!', {
