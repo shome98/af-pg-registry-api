@@ -2,3 +2,5 @@ node_modules
 .git
 api-registry_db-data
 logs
+.env
+.env*
