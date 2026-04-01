@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import { API_PREFIX } from './config/constants';
@@ -33,10 +33,23 @@ app.use((req, res, next) => {
 //  Security Headers
 app.use(helmet());
 
+const allowedOrigins = env.FRONTEND_URL
+  ? [env.FRONTEND_URL, 'http://localhost:3000', 'http://localhost:3001']
+  : ['http://localhost:3000', 'http://localhost:3001'];
+
 //  CORS
 app.use(
   cors({
-    origin: env.NODE_ENV === 'production' ? env.API_BASE_URL : '*',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin) || env.NODE_ENV === 'development') {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
+      }
+    },
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
