@@ -4,13 +4,24 @@ import { ApiError } from '../utils/api-error';
 
 type ValidationTarget = 'body' | 'query' | 'params';
 
+// Extend Express Request to include validated data
+declare global {
+  namespace Express {
+    interface Request {
+      validatedQuery?: unknown;
+      validatedBody?: unknown;
+      validatedParams?: unknown;
+    }
+  }
+}
+
 /**
  * Zod validation middleware factory.
  *
  * @param schema  - Zod schema to validate against
  * @param target  - Which part of the request to validate (default: "body")
  *
- * On success, replaces `req[target]` with the parsed+coerced Zod output
+ * On success, attaches parsed+coerced Zod output to `req.validated*` properties
  * so controllers always receive typed, transformed values.
  *
  * On failure, calls next(ApiError.badRequest) with per-field error details.
@@ -28,8 +39,19 @@ export function validate(schema: ZodSchema, target: ValidationTarget = 'body') {
       return;
     }
 
-    // Replace with parsed/coerced data (e.g. page:"1" → page:1)
-    (req as unknown as Record<string, unknown>)[target] = result.data;
+    // Attach validated data to a separate property to avoid read-only issues
+    // req.query is read-only on IncomingMessage, so we use validatedQuery instead
+    switch (target) {
+      case 'query':
+        req.validatedQuery = result.data;
+        break;
+      case 'body':
+        req.body = result.data;
+        break;
+      case 'params':
+        req.validatedParams = result.data;
+        break;
+    }
     next();
   };
 }
