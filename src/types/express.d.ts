@@ -1,5 +1,6 @@
 export interface AuthUser {
   userId: string;
+  email?: string;
   sessionToken?: string;
   role?: string;
 }
