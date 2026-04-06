@@ -44,3 +44,7 @@ export interface RecordDefinition {
 export type ApiPermission = 'SCRUD' | 'SCRUDQ' | 'MCRUD' | 'MCRUDQ';
 export type TextIndexStrategy = 'wildcard' | 'explicit';
 export type DatabaseType = 'MongoDB';
+
+export type CorsPolicy =
+  | { mode: 'any'; credentials?: boolean }
+  | { mode: 'allowlist'; allowOrigins: string[]; credentials?: boolean };

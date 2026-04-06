@@ -21,6 +21,10 @@ const envSchema = z.object({
 
   API_BASE_URL: z.string().url().default('http://localhost:3001'),
 
+  // api-factory-mongo (used to sync per-API policies like CORS)
+  MONGO_FACTORY_BASE_URL: z.string().url().default('http://localhost:3000'),
+  MONGO_FACTORY_API_VERSION: z.string().default('v1'),
+
   // Frontend URL for CORS
   FRONTEND_URL: z.string().url().optional(),
 

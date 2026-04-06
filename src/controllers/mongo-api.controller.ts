@@ -4,13 +4,23 @@ import { sendSuccess } from '../utils/api-response';
 import { ApiError } from '../utils/api-error';
 import type { PaginationDto } from '../validators/mongo-api.validator';
 import type { MongoDbApi } from '../db';
+import type { CorsPolicy } from '../types/crud-factory.types';
 
 //  Helper
 
+function toCorsList(corsPolicy?: CorsPolicy | null): string[] {
+  if (!corsPolicy) return ['*'];
+  if (corsPolicy.mode === 'any') return ['*'];
+  const list = corsPolicy.allowOrigins ?? [];
+  return list.length > 0 ? list : ['*'];
+}
+
 /** Strips apiKeyHash from a record before sending to client. */
-function toSafeRecord(record: MongoDbApi): Omit<MongoDbApi, 'apiKeyHash'> {
+function toSafeRecord(
+  record: MongoDbApi,
+): Omit<MongoDbApi, 'apiKeyHash'> & { corsList: string[] } {
   const { apiKeyHash: _hash, ...safe } = record;
-  return safe;
+  return { ...safe, corsList: toCorsList(record.corsPolicy) };
 }
 
 //  Controllers
@@ -219,6 +229,58 @@ export async function regenerateApiKey(
         newApiKey: result.newApiKey, // one-time plaintext
       },
     );
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * PATCH /mongo-apis/by-api-id/:apiId/cors-policy
+ * Syncs CORS policy to api-factory-mongo first, then persists in the registry.
+ */
+export async function syncCorsPolicy(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return void next(ApiError.unauthorized());
+
+    const apiId = String(req.params.apiId);
+
+    const record = await service.syncCorsPolicyByApiId(apiId, userId, req.body, {
+      authorization: req.headers.authorization,
+      cookie: req.headers.cookie,
+      'x-user-id': req.headers['x-user-id'] as string | undefined,
+      'x-session-id': req.headers['x-session-id'] as string | undefined,
+    });
+
+    sendSuccess(res, '✅ CORS policy updated.', toSafeRecord(record));
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * PATCH /mongo-apis/by-api-id/:apiId/cors-policy/persist
+ * Persists CORS policy only in the registry (no call to api-factory-mongo).
+ *
+ * Intended to be called by api-factory-mongo after it updates runtime policy.
+ */
+export async function persistCorsPolicy(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return void next(ApiError.unauthorized());
+
+    const apiId = String(req.params.apiId);
+
+    const record = await service.persistCorsPolicyByApiId(apiId, userId, req.body);
+    sendSuccess(res, '✅ CORS policy persisted.', toSafeRecord(record));
   } catch (err) {
     next(err);
   }

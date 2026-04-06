@@ -11,6 +11,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import type { CorsPolicy } from '../../types/crud-factory.types';
 
 // Enums
 
@@ -110,6 +111,12 @@ export const mongoDbApis = pgTable(
 
     /** Whether Swagger/docs UI is accessible for this API */
     hasDocsAccess: boolean('hasDocsAccess').notNull().default(false),
+
+    /**
+     * Per-API CORS policy (mirrors CrudFactory's corsPolicy).
+     * When missing/null, clients should treat it as allow-all ("*").
+     */
+    corsPolicy: jsonb('corsPolicy').$type<CorsPolicy | null>(),
 
     /**
      * MongoDB username provisioned specifically for this API's dbName.

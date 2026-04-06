@@ -12,6 +12,7 @@ Each record represents one generated API configuration, including:
 
 - metadata like `name`, `description`, `apiId`
 - the generated endpoint list
+- per-API CORS policy (`corsPolicy`) and derived `corsList`
 - record/model definitions
 - permission mode
 - docs access flag
@@ -360,6 +361,22 @@ Path param:
 
 Use this when the FE is keyed by the generated API identifier instead of the PostgreSQL row ID.
 
+### 4.1 Sync/update per-API CORS policy
+
+`PATCH /api/v1/mongo-apis/by-api-id/:apiId/cors-policy`
+
+This endpoint updates CORS in **api-factory-mongo first**, then persists the same policy in the PG registry.
+
+Request body supports either:
+
+- `corsPolicy` (CrudFactory shape), e.g. `{ "mode": "any" }` or `{ "mode": "allowlist", "allowOrigins": ["https://app.example.com"] }`
+- `corsList` (shortcut), where missing/empty (or containing `"*"`) means allow-all
+
+Response includes `corsList`, where:
+
+- if `corsPolicy` is missing/null or `{ "mode": "any" }` → `["*"]`
+- if allowlist → list of allowed origins
+
 ### 5. Update a record
 
 `PATCH /api/v1/mongo-apis/:id`
@@ -378,6 +395,7 @@ Updatable fields:
 - `softDelete`
 - `textIndexStrategy`
 - `hasDocsAccess`
+- `corsPolicy`
 - `provisionedUser`
 - `endpoints`
 - `expirationTime`
@@ -604,4 +622,3 @@ If an LLM is calling this API, these rules help a lot:
 5. Use `PATCH /api/v1/mongo-apis/:id` for edits.
 6. Use soft delete by default, hard delete only behind a strong confirmation step.
 7. Use regenerate-key only when the user explicitly rotates credentials.
-

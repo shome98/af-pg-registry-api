@@ -62,6 +62,20 @@ const recordDefinitionZ = z.object({
   record_config: recordConfigZ,
 });
 
+//  Per-API CORS policy (mirrors api-factory-mongo corsPolicy)
+
+export const corsPolicySchema = z.discriminatedUnion('mode', [
+  z.object({
+    mode: z.literal('any'),
+    credentials: z.boolean().optional(),
+  }),
+  z.object({
+    mode: z.literal('allowlist'),
+    allowOrigins: z.array(z.string().min(1).max(300)).min(1),
+    credentials: z.boolean().optional(),
+  }),
+]);
+
 //  Create Schema
 
 export const createMongoApiSchema = z
@@ -110,6 +124,12 @@ export const createMongoApiSchema = z
 
     hasDocsAccess: z.boolean().default(false),
 
+    /**
+     * Per-API CORS policy. If omitted, treat as allow-all ("*").
+     * (Mirrors CrudFactory's corsPolicy)
+     */
+    corsPolicy: corsPolicySchema.optional(),
+
     /** Provisioned MongoDB username (if CrudFactory created one) */
     provisionedUser: z.string().max(128).optional(),
 
@@ -149,6 +169,7 @@ export const updateMongoApiSchema = z
     softDelete: z.boolean().optional(),
     textIndexStrategy: z.enum(['wildcard', 'explicit']).nullable().optional(),
     hasDocsAccess: z.boolean().optional(),
+    corsPolicy: corsPolicySchema.nullable().optional(),
     provisionedUser: z.string().max(128).nullable().optional(),
     endpoints: z.array(z.string()).optional(),
     expirationTime: z.coerce.date().optional(),
@@ -156,6 +177,16 @@ export const updateMongoApiSchema = z
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: '❌ At least one field must be provided for update',
+  });
+
+export const updateCorsPolicySchema = z
+  .object({
+    corsPolicy: corsPolicySchema.nullable().optional(),
+    corsList: z.array(z.string().min(1).max(300)).optional(),
+    credentials: z.boolean().optional(),
+  })
+  .refine((v) => v.corsPolicy !== undefined || v.corsList !== undefined, {
+    message: 'At least one of corsPolicy or corsList must be provided',
   });
 
 //  Query / Pagination Schema
@@ -187,3 +218,4 @@ export const apiIdParamSchema = z.object({
 export type CreateMongoApiDto = z.infer<typeof createMongoApiSchema>;
 export type UpdateMongoApiDto = z.infer<typeof updateMongoApiSchema>;
 export type PaginationDto = z.infer<typeof paginationSchema>;
+export type UpdateCorsPolicyDto = z.infer<typeof updateCorsPolicySchema>;

@@ -4,10 +4,13 @@ import { ApiError } from '../utils/api-error';
 import { generateApiKey, hashString, generateApiId } from '../utils/crypto';
 import { encrypt, decrypt } from '../utils/encrypt';
 import { env } from '../config/env';
+import type { CorsPolicy } from '../types/crud-factory.types';
+import { patchApiCorsPolicy } from './mongo-factory.client';
 import type {
   CreateMongoApiDto,
   UpdateMongoApiDto,
   PaginationDto,
+  UpdateCorsPolicyDto,
 } from '../validators/mongo-api.validator';
 
 //  Return Types
@@ -64,6 +67,18 @@ function sanitizeRecord(
   };
 }
 
+function normalizeCorsPolicyForStorage(
+  policy: CorsPolicy | null | undefined,
+): CorsPolicy | null | undefined {
+  if (!policy) return policy;
+  if (policy.mode === 'any') return null;
+  if (policy.mode === 'allowlist') {
+    const allowOrigins = policy.allowOrigins ?? [];
+    if (allowOrigins.length === 0) return null;
+  }
+  return policy;
+}
+
 //  Service Functions ──
 
 /**
@@ -98,6 +113,9 @@ export async function createMongoApi(
     textIndexStrategy:
       (dto.textIndexStrategy as 'wildcard' | 'explicit' | null) ?? null,
     hasDocsAccess: dto.hasDocsAccess ?? false,
+    corsPolicy: normalizeCorsPolicyForStorage(
+      dto.corsPolicy as CorsPolicy | undefined,
+    ) as (typeof mongoDbApis.$inferInsert)['corsPolicy'],
     provisionedUser: dto.provisionedUser ?? null,
     expirationTime: new Date(dto.expirationTime),
     isActive: true,
@@ -254,6 +272,11 @@ export async function updateMongoApi(
   }
   if (dto.hasDocsAccess !== undefined)
     updateData.hasDocsAccess = dto.hasDocsAccess;
+  if (dto.corsPolicy !== undefined) {
+    updateData.corsPolicy = normalizeCorsPolicyForStorage(
+      dto.corsPolicy as CorsPolicy | null,
+    ) as (typeof mongoDbApis.$inferInsert)['corsPolicy'];
+  }
   if (dto.provisionedUser !== undefined)
     updateData.provisionedUser = dto.provisionedUser;
   if (dto.endpoints !== undefined) {
@@ -345,6 +368,80 @@ export async function regenerateApiKey(
   return {
     record: { ...updated, dbUri: decryptDbUri(updated.dbUri) as string | null },
     newApiKey,
+  };
+}
+
+export async function syncCorsPolicyByApiId(
+  apiId: string,
+  userId: string,
+  dto: UpdateCorsPolicyDto,
+  forwardHeaders: {
+    authorization?: string;
+    cookie?: string;
+    'x-user-id'?: string;
+    'x-session-id'?: string;
+  },
+): Promise<MongoDbApi> {
+  await getMongoApiByApiId(apiId, userId);
+
+  const policyFromBody = dto.corsPolicy as CorsPolicy | null | undefined;
+
+  const corsPolicy: CorsPolicy = policyFromBody ?? resolveCorsPolicyFromDto(dto);
+
+  // 1) Update policy in api-factory-mongo first (source of truth for runtime)
+  await patchApiCorsPolicy(apiId, corsPolicy, forwardHeaders);
+
+  // 2) Persist in registry (store null for allow-all)
+  return await persistCorsPolicyRecordByApiId(apiId, userId, corsPolicy);
+}
+
+export async function persistCorsPolicyByApiId(
+  apiId: string,
+  userId: string,
+  dto: UpdateCorsPolicyDto,
+): Promise<MongoDbApi> {
+  await getMongoApiByApiId(apiId, userId);
+
+  const policyFromBody = dto.corsPolicy as CorsPolicy | null | undefined;
+  const corsPolicy: CorsPolicy = policyFromBody ?? resolveCorsPolicyFromDto(dto);
+
+  return await persistCorsPolicyRecordByApiId(apiId, userId, corsPolicy);
+}
+
+async function persistCorsPolicyRecordByApiId(
+  apiId: string,
+  userId: string,
+  corsPolicy: CorsPolicy,
+): Promise<MongoDbApi> {
+  const corsPolicyForStorage = normalizeCorsPolicyForStorage(corsPolicy);
+
+  const [updated] = await db
+    .update(mongoDbApis)
+    .set({
+      corsPolicy:
+        corsPolicyForStorage as (typeof mongoDbApis.$inferInsert)['corsPolicy'],
+      updatedAt: new Date(),
+    })
+    .where(and(eq(mongoDbApis.apiId, apiId), eq(mongoDbApis.userId, userId)))
+    .returning();
+
+  if (!updated) {
+    throw ApiError.internal('💥 Failed to update CORS policy.');
+  }
+
+  return { ...updated, dbUri: decryptDbUri(updated.dbUri) as string | null };
+}
+
+function resolveCorsPolicyFromDto(dto: UpdateCorsPolicyDto): CorsPolicy {
+  const allow = dto.corsList ?? [];
+  const credentials = dto.credentials;
+  if (allow.length === 0 || allow.includes('*')) {
+    return { mode: 'any', ...(credentials !== undefined && { credentials }) };
+  }
+  return {
+    mode: 'allowlist',
+    allowOrigins: allow,
+    ...(credentials !== undefined && { credentials }),
   };
 }
 

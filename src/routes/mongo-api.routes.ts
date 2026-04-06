@@ -8,6 +8,7 @@ import {
 import {
   createMongoApiSchema,
   updateMongoApiSchema,
+  updateCorsPolicySchema,
   paginationSchema,
   uuidParamSchema,
   apiIdParamSchema,
@@ -49,6 +50,28 @@ router.get(
   '/by-api-id/:apiId',
   validate(apiIdParamSchema, 'params'),
   controller.getMongoApiByApiId,
+);
+
+/**
+ * PATCH /api/v1/mongo-apis/by-api-id/:apiId/cors-policy
+ * Syncs CORS policy to api-factory-mongo first, then persists in the registry.
+ */
+router.patch(
+  '/by-api-id/:apiId/cors-policy',
+  validate(apiIdParamSchema, 'params'),
+  validate(updateCorsPolicySchema),
+  controller.syncCorsPolicy,
+);
+
+/**
+ * PATCH /api/v1/mongo-apis/by-api-id/:apiId/cors-policy/persist
+ * Persist-only variant for callers that already updated api-factory-mongo.
+ */
+router.patch(
+  '/by-api-id/:apiId/cors-policy/persist',
+  validate(apiIdParamSchema, 'params'),
+  validate(updateCorsPolicySchema),
+  controller.persistCorsPolicy,
 );
 
 /**
