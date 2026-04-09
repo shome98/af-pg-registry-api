@@ -1,15 +1,18 @@
 services:
 
   app:
-    build: . 
+    build: 
+      context: .
+      target: production
     container_name: api-registry
     ports:
       - "9878:9878"      
     volumes:
-      - .:/app                       # Map local code to container
-      - /app/node_modules            # Anonymous volume to protect container's node_modules
-    # env_file:
-    #   - fileName
+      # - .:/app                       # Map local code to container
+      # - /app/node_modules            # Anonymous volume to protect container's node_modules
+      - ./logs:/app/logs
+    env_file:
+      - ./.env
     depends_on:
       - postgres-db_api-registry
     networks:
