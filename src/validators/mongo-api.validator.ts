@@ -124,6 +124,8 @@ export const createMongoApiSchema = z
 
     hasDocsAccess: z.boolean().default(false),
 
+    rateLimit: z.number().int().positive().default(10000),
+
     /**
      * Per-API CORS policy. If omitted, treat as allow-all ("*").
      * (Mirrors CrudFactory's corsPolicy)
@@ -169,6 +171,7 @@ export const updateMongoApiSchema = z
     softDelete: z.boolean().optional(),
     textIndexStrategy: z.enum(['wildcard', 'explicit']).nullable().optional(),
     hasDocsAccess: z.boolean().optional(),
+    rateLimit: z.number().int().positive().optional(),
     corsPolicy: corsPolicySchema.nullable().optional(),
     provisionedUser: z.string().max(128).nullable().optional(),
     endpoints: z.array(z.string()).optional(),
