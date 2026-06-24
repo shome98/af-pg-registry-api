@@ -1,20 +1,13 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { Pool } from 'pg';
-import * as dotenv from 'dotenv';
 import path from 'path';
-
-dotenv.config();
+import { env } from '../config/env';
 
 async function runMigrations() {
-  if (!process.env.DATABASE_URL) {
-    console.error('❌ DATABASE_URL is not set in environment');
-    process.exit(1);
-  }
-
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ...(process.env.DB_TYPE === 'neon' && {
+    connectionString: env.DATABASE_URL,
+    ...(env.DB_TYPE === 'neon' && {
       ssl: { rejectUnauthorized: false },
     }),
   });
