@@ -2,12 +2,11 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { Pool } from 'pg';
 import path from 'path';
-import { env } from '../config/env';
-import { getPgSslConfig } from './ssl';
+import { getPgConnectionString, getPgSslConfig } from './ssl';
 
 async function runMigrations() {
   const pool = new Pool({
-    connectionString: env.DATABASE_URL,
+    connectionString: getPgConnectionString(),
     ...getPgSslConfig(),
   });
 
