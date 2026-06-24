@@ -10,7 +10,7 @@ dist/
 .env.production
 
 # Drizzle — keep migrations, ignore meta
-drizzle/meta/
+# drizzle/meta/
 
 # Logs
 *.log
