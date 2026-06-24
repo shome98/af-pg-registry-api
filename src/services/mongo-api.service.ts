@@ -113,6 +113,7 @@ export async function createMongoApi(
     textIndexStrategy:
       (dto.textIndexStrategy as 'wildcard' | 'explicit' | null) ?? null,
     hasDocsAccess: dto.hasDocsAccess ?? false,
+    rateLimit: dto.rateLimit ?? 10000,
     corsPolicy: normalizeCorsPolicyForStorage(
       dto.corsPolicy as CorsPolicy | undefined,
     ) as (typeof mongoDbApis.$inferInsert)['corsPolicy'],
@@ -272,6 +273,7 @@ export async function updateMongoApi(
   }
   if (dto.hasDocsAccess !== undefined)
     updateData.hasDocsAccess = dto.hasDocsAccess;
+  if (dto.rateLimit !== undefined) updateData.rateLimit = dto.rateLimit;
   if (dto.corsPolicy !== undefined) {
     updateData.corsPolicy = normalizeCorsPolicyForStorage(
       dto.corsPolicy as CorsPolicy | null,

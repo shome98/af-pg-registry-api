@@ -4,6 +4,7 @@ import {
   varchar,
   text,
   boolean,
+  integer,
   timestamp,
   jsonb,
   pgEnum,
@@ -111,6 +112,9 @@ export const mongoDbApis = pgTable(
 
     /** Whether Swagger/docs UI is accessible for this API */
     hasDocsAccess: boolean('hasDocsAccess').notNull().default(false),
+
+    /** Monthly request rate limit applied to this API key */
+    rateLimit: integer('rateLimit').notNull().default(10000),
 
     /**
      * Per-API CORS policy (mirrors CrudFactory's corsPolicy).
