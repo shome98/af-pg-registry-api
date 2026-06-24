@@ -7,9 +7,9 @@ import { env } from '../config/env';
 async function runMigrations() {
   const pool = new Pool({
     connectionString: env.DATABASE_URL,
-    ...(env.DB_TYPE === 'neon' && {
-      ssl: { rejectUnauthorized: false },
-    }),
+    // ...(env.DB_TYPE === 'neon' && {
+    //   ssl: { rejectUnauthorized: false },
+    // }),
   });
 
   const db = drizzle(pool);
