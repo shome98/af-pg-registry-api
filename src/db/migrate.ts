@@ -3,13 +3,12 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { Pool } from 'pg';
 import path from 'path';
 import { env } from '../config/env';
+import { getPgSslConfig } from './ssl';
 
 async function runMigrations() {
   const pool = new Pool({
     connectionString: env.DATABASE_URL,
-    // ...(env.DB_TYPE === 'neon' && {
-    //   ssl: { rejectUnauthorized: false },
-    // }),
+    ...getPgSslConfig(),
   });
 
   const db = drizzle(pool);

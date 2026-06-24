@@ -2,6 +2,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from './schema/mongo-api.schema';
 import { env } from '../config/env';
+import { getPgSslConfig } from './ssl';
 
 /**
  * Single shared Pool — supports both local PostgreSQL and Neon.
@@ -12,9 +13,7 @@ const pool = new Pool({
   max: 10,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 5_000,
-  ...(env.DB_TYPE === 'neon' && {
-    ssl: { rejectUnauthorized: false },
-  }),
+  ...getPgSslConfig(),
 });
 
 pool.on('error', (err) => {
