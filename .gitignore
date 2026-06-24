@@ -25,5 +25,5 @@ Thumbs.db
 .idea/
 
 api-registry_db-data
-drizzle
+# drizzle
 logs
